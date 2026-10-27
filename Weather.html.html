@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherNow - Weather App</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            color: white;
+            background: linear-gradient(135deg, #101b45, #176b87, #53b8ad);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.13);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            backdrop-filter: blur(15px);
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #e0f5ff;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        input {
+            flex: 1;
+            width: 0;
+            min-width: 0;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            outline: none;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 14px 18px;
+            border: none;
+            border-radius: 12px;
+            background: #ffcf70;
+            color: #14213d;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #ffb938;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        #message {
+            margin: 20px 0;
+            font-size: 14px;
+            color: #e0f5ff;
+            overflow-wrap: anywhere;
+        }
+
+        .weather {
+            padding-top: 5px;
+        }
+
+        .weather[hidden] {
+            display: none;
+        }
+
+        #city {
+            font-size: 25px;
+        }
+
+        #localTime {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #e0f5ff;
+        }
+
+        #icon {
+            width: 100px;
+            height: 100px;
+            margin-top: 12px;
+        }
+
+        #temperature {
+            font-size: 58px;
+            margin-bottom: 8px;
+        }
+
+        #condition {
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        #feelsLike {
+            margin-top: 10px;
+            color: #e0f5ff;
+            font-size: 14px;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .detail {
+            padding: 15px 5px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.13);
+        }
+
+        .detail span {
+            font-size: 23px;
+        }
+
+        .detail p {
+            margin: 10px 0 6px;
+            color: #e0f5ff;
+            font-size: 12px;
+        }
+
+        .detail strong {
+            font-size: 14px;
+        }
+
+        footer {
+            margin-top: 25px;
+            color: #e0f5ff;
+            font-size: 12px;
+        }
+
+        @media (max-width: 380px) {
+            .container {
+                padding: 20px 14px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+
+            button {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <h1>☀️ WeatherNow</h1>
+        <p class="subtitle">Discover the weather in your city</p>
+
+        <form class="search-box" id="weatherForm">
+            <input
+                type="text"
+                id="cityInput"
+                placeholder="Enter city name..."
+                aria-label="City name"
+                autocomplete="off"
+                required
+            >
+            <button type="submit" id="searchBtn">Search</button>
+        </form>
+
+        <p id="message" role="status" aria-live="polite">
+            Enter a city to check its weather.
+        </p>
+
+        <section class="weather" id="weatherCard" hidden>
+
+            <h2 id="city"></h2>
+            <p id="localTime"></p>
+
+            <img id="icon" src="" alt="Weather icon">
+
+            <h2 id="temperature">--°C</h2>
+            <p id="condition"></p>
+            <p id="feelsLike"></p>
+
+            <div class="details">
+
+                <div class="detail">
+                    <span>💧</span>
+                    <p>Humidity</p>
+                    <strong id="humidity">--%</strong>
+                </div>
+
+                <div class="detail">
+                    <span>💨</span>
+                    <p>Wind Speed</p>
+                    <strong id="wind">-- km/h</strong>
+                </div>
+
+                <div class="detail">
+                    <span>☀️</span>
+                    <p>UV Index</p>
+                    <strong id="uv">--</strong>
+                </div>
+
+            </div>
+        </section>
+
+        <footer>Powered by WeatherAPI.com</footer>
+
+    </main>
+
+    <script>
+        const API_KEY = "7f9d33ab9b074125a46135308262610";
+
+        const form = document.getElementById("weatherForm");
+        const cityInput = document.getElementById("cityInput");
+        const searchBtn = document.getElementById("searchBtn");
+        const message = document.getElementById("message");
+        const weatherCard = document.getElementById("weatherCard");
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const cityName = cityInput.value.trim();
+
+            if (!cityName) {
+                message.textContent = "Please enter a city name.";
+                weatherCard.hidden = true;
+                return;
+            }
+
+            searchBtn.disabled = true;
+            searchBtn.textContent = "Loading...";
+            message.textContent = "Fetching weather data...";
+            weatherCard.hidden = true;
+
+            try {
+                const url =
+                    "https://api.weatherapi.com/v1/current.json" +
+                    "?key=" + encodeURIComponent(API_KEY) +
+                    "&q=" + encodeURIComponent(cityName) +
+                    "&aqi=yes";
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error?.message || "Unable to get weather data."
+                    );
+                }
+
+                const location = data.location;
+                const current = data.current;
+
+                document.getElementById("city").textContent =
+                    location.name + ", " + location.country;
+
+                document.getElementById("localTime").textContent =
+                    "Local time: " + location.localtime;
+
+                document.getElementById("temperature").textContent =
+                    Math.round(current.temp_c) + "°C";
+
+                document.getElementById("condition").textContent =
+                    current.condition.text;
+
+                document.getElementById("feelsLike").textContent =
+                    "Feels like " + Math.round(current.feelslike_c) + "°C";
+
+                document.getElementById("humidity").textContent =
+                    current.humidity + "%";
+
+                document.getElementById("wind").textContent =
+                    current.wind_kph + " km/h";
+
+                document.getElementById("uv").textContent = current.uv;
+
+                const weatherIcon = document.getElementById("icon");
+                weatherIcon.src = "https:" + current.condition.icon;
+                weatherIcon.alt = current.condition.text;
+
+                message.textContent = "Weather updated successfully!";
+                weatherCard.hidden = false;
+
+            } catch (error) {
+                if (error.message === "Failed to fetch") {
+                    message.textContent =
+                        "Network error. Check your internet or try using Live Server.";
+                } else {
+                    message.textContent = error.message;
+                }
+
+                weatherCard.hidden = true;
+
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = "Search";
+            }
+        });
+    </script>
+
+</body>
+</html>
